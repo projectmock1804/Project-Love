@@ -1,5 +1,4 @@
 {
-  "buildCommand": "npm ci --verbose && npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm ci --verbose"
+  "buildCommand": "npm ci && npm run build",
+  "outputDirectory": ".next"
 }
