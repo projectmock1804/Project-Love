@@ -1,6 +1,4 @@
 {
-  "functions": {
-    "app/api/match/run/route.ts": { "maxDuration": 120 },
-    "app/api/chat/route.ts": { "maxDuration": 60 }
-  }
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": ".next"
 }
