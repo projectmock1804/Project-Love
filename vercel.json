@@ -1,8 +1,5 @@
 {
-  "buildCommand": "npm install && npm run build",
+  "buildCommand": "npm ci --verbose && npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install",
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "installCommand": "npm ci --verbose"
 }
