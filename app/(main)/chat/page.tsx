@@ -13,8 +13,6 @@ interface ChatMessage {
 const FIRST_MESSAGE =
   "안녕하세요! 저는 Kin의 AI예요. 당신을 조금 더 알아가고 싶어서요. 편하게 이야기해주세요 😊\n\n요즘 어떻게 지내고 계세요? 연애나 만남에 대해 생각하게 된 계기가 있나요?";
 
-const MAX_USER_TURNS = 20;
-
 export default function ChatPage() {
   const router = useRouter();
   useRequireAuth();
@@ -25,6 +23,7 @@ export default function ChatPage() {
   const [error, setError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadChat();
   }, []);

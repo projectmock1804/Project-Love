@@ -40,8 +40,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // survey/chat/persona 제외한 필드만 반환
-    const { survey: _s, chatSession: _c, persona: _p, ...userFields } = user;
+    // survey/chat/persona 제외한 필드만 반환 (이들은 이미 확인되었으므로 제거)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { survey: _, chatSession: __, persona: ___, ...userFields } = user;
     return NextResponse.json({ ...userFields, nextStep });
   } catch (err: unknown) {
     if (err instanceof Error && err.message === "UNAUTHORIZED") {

@@ -219,7 +219,7 @@ export default function MatchesPage() {
           <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center">
             <div className="text-4xl mb-3">🔍</div>
             <p className="text-stone-700 font-medium text-sm">아직 매칭이 없어요</p>
-            <p className="text-stone-400 text-xs mt-1 mb-4">위 '매칭 찾기' 버튼을 눌러보세요.</p>
+            <p className="text-stone-400 text-xs mt-1 mb-4">위 &quot;매칭 찾기&quot; 버튼을 눌러보세요.</p>
             <button
               onClick={runMatching}
               disabled={running}

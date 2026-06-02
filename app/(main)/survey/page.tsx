@@ -276,7 +276,6 @@ export default function SurveyPage() {
             <SurveyWorldCup
               celebrities={getAppearanceCelebrities(resolvedGender)}
               onComplete={handleWorldCupComplete}
-              title="이상형 월드컵"
             />
           </div>
         )}

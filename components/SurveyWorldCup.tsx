@@ -6,7 +6,6 @@ import { Celebrity } from "@/lib/newSurveyQuestions";
 interface WorldCupProps {
   celebrities: Celebrity[];
   onComplete: (winner: Celebrity, scores: Record<string, number>, allChoices: Celebrity[]) => void;
-  title: string;
 }
 
 const SCALE_OPTIONS = [
@@ -17,7 +16,7 @@ const SCALE_OPTIONS = [
   { value: 5, label: "최고야!", emoji: "🔥" },
 ];
 
-export default function SurveyWorldCup({ celebrities, onComplete, title }: WorldCupProps) {
+export default function SurveyWorldCup({ celebrities, onComplete }: WorldCupProps) {
   // 16명을 셔플해서 시작 — Fisher-Yates (통계적 편향 없음)
   const [rounds] = useState<Celebrity[][]>(() => {
     const shuffled = [...celebrities];

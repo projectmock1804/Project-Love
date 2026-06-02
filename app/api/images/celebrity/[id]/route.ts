@@ -18,8 +18,8 @@ export async function GET(
   ];
 
   // Parse id like "female_1"
-  const [_type, numStr] = id.split('_');
-  const num = parseInt(numStr) - 1;
+  const parts = id.split('_');
+  const num = parseInt(parts[1]) - 1;
 
   if (num < 0 || num >= 16) {
     return new Response('Not found', { status: 404 });
