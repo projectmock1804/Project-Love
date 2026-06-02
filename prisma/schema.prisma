@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  gender       String   // "male" | "female"
+  age          Int
+  region       String
+  status       String   @default("onboarding") // "onboarding" | "active" | "waitlist"
+  createdAt    DateTime @default(now())
+
+  survey       Survey?
+  chatSession  ChatSession?
+  persona      Persona?
+  matchesAs1   Match[]      @relation("user1")
+  matchesAs2   Match[]      @relation("user2")
+  sentMessages Message[]    @relation("sender")
+  payments     Payment[]
+}
+
+model Survey {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  responses Json     // 모든 설문 응답 저장 (구조화된 JSON)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatSession {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  messagesJson Json     @default("[]")
+  status       String   @default("active") // "active" | "completed"
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Persona {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  summaryJson   Json
+  userConfirmed Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchesAs1    Match[]  @relation("persona1")
+  matchesAs2    Match[]  @relation("persona2")
+}
+
+model Match {
+  id                  String   @id @default(cuid())
+  user1Id             String
+  user2Id             String
+  persona1Id          String
+  persona2Id          String
+  compatibilityScore  Int
+  scoreBreakdownJson  Json
+  simulationChatJson  Json     @default("[]")
+  user1Interested     Boolean  @default(false)
+  user2Interested     Boolean  @default(false)
+  unlocked            Boolean  @default(false)
+  createdAt           DateTime @default(now())
+
+  user1    User    @relation("user1", fields: [user1Id], references: [id])
+  user2    User    @relation("user2", fields: [user2Id], references: [id])
+  persona1 Persona @relation("persona1", fields: [persona1Id], references: [id])
+  persona2 Persona @relation("persona2", fields: [persona2Id], references: [id])
+  messages Message[]
+  payments Payment[]
+
+  @@unique([user1Id, user2Id])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  matchId   String
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  match  Match @relation(fields: [matchId], references: [id])
+  sender User  @relation("sender", fields: [senderId], references: [id])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  userId    String
+  matchId   String
+  amount    Int      @default(10000)
+  tossKey   String?
+  status    String   @default("pending") // "pending" | "processing" | "success" | "failed"
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  match Match @relation(fields: [matchId], references: [id])
+}
