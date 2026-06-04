@@ -1,8 +1,12 @@
-const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY;
-if (!TOSS_SECRET_KEY) {
-  throw new Error("TOSS_SECRET_KEY 환경변수가 설정되지 않았습니다.");
-}
 const CONFIRM_URL = "https://api.tosspayments.com/v1/payments/confirm";
+
+function getTossSecretKey(): string {
+  const key = process.env.TOSS_SECRET_KEY;
+  if (!key) {
+    throw new Error("TOSS_SECRET_KEY 환경변수가 설정되지 않았습니다.");
+  }
+  return key;
+}
 const TIMEOUT_MS = 10_000; // Toss API 타임아웃 10초
 
 export interface TossConfirmResult {
@@ -23,7 +27,7 @@ export async function confirmTossPayment(
   orderId: string,
   amount: number
 ): Promise<TossConfirmResult> {
-  const basicToken = Buffer.from(`${TOSS_SECRET_KEY}:`).toString("base64");
+  const basicToken = Buffer.from(`${getTossSecretKey()}:`).toString("base64");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
