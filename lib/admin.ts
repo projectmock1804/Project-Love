@@ -7,16 +7,27 @@ if (!ADMIN_JWT_SECRET) {
   throw new Error("ADMIN_JWT_SECRET 환경변수가 설정되지 않았습니다.");
 }
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-if (!ADMIN_PASSWORD) {
-  throw new Error("ADMIN_PASSWORD 환경변수가 설정되지 않았습니다.");
+/** 어드민 비밀번호 동적 생성 (패턴 + MMDD) */
+function getAdminPassword(): string {
+  const pattern = process.env.ADMIN_PASSWORD_PATTERN;
+  if (!pattern) {
+    throw new Error("ADMIN_PASSWORD_PATTERN 환경변수가 설정되지 않았습니다.");
+  }
+
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+  const mmdd = month + date;
+
+  return pattern + mmdd;
 }
 
 /** 어드민 비밀번호 검증 — constant-time 비교로 타이밍 공격 방지 */
 export function validateAdminPassword(input: string): boolean {
   try {
+    const expectedPassword = getAdminPassword();
     const inputBuf = Buffer.from(input);
-    const storedBuf = Buffer.from(ADMIN_PASSWORD as string);
+    const storedBuf = Buffer.from(expectedPassword);
     if (inputBuf.length !== storedBuf.length) {
       // 길이 다를 때도 동일 시간을 소비하도록 dummy 비교
       crypto.timingSafeEqual(Buffer.alloc(storedBuf.length), storedBuf);
