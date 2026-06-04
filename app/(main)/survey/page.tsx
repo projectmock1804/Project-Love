@@ -7,6 +7,7 @@ import SurveyWorldCup from "@/components/SurveyWorldCup";
 import SurveyPersonality from "@/components/SurveyPersonality";
 import SurveyLifestyle from "@/components/SurveyLifestyle";
 import SurveyBodyFeatures from "@/components/SurveyBodyFeatures";
+import SurveyOpenEnded from "@/components/SurveyOpenEnded";
 import {
   getAppearanceCelebrities,
   getBodyFeatures,
@@ -15,7 +16,7 @@ import {
   Celebrity,
 } from "@/lib/newSurveyQuestions";
 
-type SurveySection = "intro" | "world_cup" | "personality" | "lifestyle" | "body" | "complete";
+type SurveySection = "intro" | "world_cup" | "personality" | "lifestyle" | "body" | "open_ended" | "complete";
 
 interface SurveyResponses {
   appearance_winner?: {
@@ -30,6 +31,7 @@ interface SurveyResponses {
   lifestyle?: string;
   body_features?: Record<string, number>;
   age_range?: string; // 나이 선호도 — match/run에서 ageAcceptable 필터에 사용
+  open_ended_answers?: Record<string, string>; // 오픈엔드 주관식 답변
 }
 
 export default function SurveyPage() {
@@ -43,6 +45,7 @@ export default function SurveyPage() {
     personality: {},
     body_features: {},
     age_range: "±5세",  // 기본값
+    open_ended_answers: {},
   });
   const [currentPersonalityIdx, setCurrentPersonalityIdx] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -81,7 +84,7 @@ export default function SurveyPage() {
   const resolvedGender = userGender || "male";
 
   const getProgress = () => {
-    const sections: SurveySection[] = ["world_cup", "personality", "lifestyle", "body"];
+    const sections: SurveySection[] = ["world_cup", "personality", "lifestyle", "body", "open_ended"];
     const completed = sections.filter((s) => {
       if (s === "world_cup") return !!responses.appearance_winner;
       if (s === "personality")
@@ -89,6 +92,8 @@ export default function SurveyPage() {
       if (s === "lifestyle") return !!responses.lifestyle;
       if (s === "body")
         return Object.keys(responses.body_features || {}).length === getBodyFeatures(resolvedGender).length;
+      if (s === "open_ended")
+        return Object.keys(responses.open_ended_answers || {}).length === 5; // 5개 질문
       return false;
     }).length;
     return Math.round((completed / sections.length) * 100);
@@ -148,6 +153,14 @@ export default function SurveyPage() {
   const isBodyFeaturesComplete =
     Object.keys(responses.body_features || {}).length === getBodyFeatures(resolvedGender).length;
 
+  const handleOpenEndedComplete = (answers: Record<string, string>) => {
+    setResponses((prev) => ({
+      ...prev,
+      open_ended_answers: answers,
+    }));
+    setSection("complete");
+  };
+
   async function handleFinalSubmit() {
     setLoading(true);
     setError("");
@@ -187,6 +200,7 @@ export default function SurveyPage() {
       setCurrentPersonalityIdx(0); // 마지막이 아닌 첫 질문으로 (UX 혼란 방지)
       setSection("personality");
     } else if (section === "body") setSection("lifestyle");
+    else if (section === "open_ended") setSection("body");
     // world_cup: 이전 버튼 숨김 처리 (아래 Navigation에서)
   };
 
@@ -202,6 +216,7 @@ export default function SurveyPage() {
                 {section === "personality" && "💭 성격 시나리오"}
                 {section === "lifestyle" && "🎯 라이프스타일"}
                 {section === "body" && "📏 신체 특성"}
+                {section === "open_ended" && "💬 당신의 이야기"}
               </h1>
               <span className="text-sm font-medium text-slate-600">{getProgress()}%</span>
             </div>
@@ -246,6 +261,7 @@ export default function SurveyPage() {
                 { icon: "💭", title: "성격 시나리오", desc: "실제 상황에서 내 반응 패턴을 파악해요" },
                 { icon: "🎯", title: "라이프스타일", desc: "나의 주말 스타일과 삶의 방식" },
                 { icon: "📏", title: "이상형 조건", desc: "키, 체형, 외적 조건 선호도" },
+                { icon: "💬", title: "당신의 이야기", desc: "자유로운 형식으로 당신을 표현해요" },
               ].map((item) => (
                 <div key={item.title} className="flex items-start gap-3">
                   <span className="text-2xl">{item.icon}</span>
@@ -348,6 +364,13 @@ export default function SurveyPage() {
           </div>
         )}
 
+        {section === "open_ended" && (
+          <SurveyOpenEnded
+            responses={responses.open_ended_answers || {}}
+            onComplete={handleOpenEndedComplete}
+          />
+        )}
+
         {section === "complete" && (
           <div className="bg-white rounded-2xl p-12 shadow-lg text-center">
             <div className="text-6xl mb-6">🎉</div>
@@ -374,7 +397,7 @@ export default function SurveyPage() {
         )}
 
         {/* Navigation */}
-        {section !== "intro" && section !== "complete" && (
+        {section !== "intro" && section !== "complete" && section !== "open_ended" && (
           <div className="mt-8 flex gap-3">
             {/* world_cup 에선 "이전" 숨김 — 토너먼트 중간 되돌리기 불가 */}
             {section !== "world_cup" && (
@@ -408,7 +431,7 @@ export default function SurveyPage() {
                     setError("모든 신체 특성을 선택해주세요");
                     return;
                   }
-                  setSection("complete");
+                  setSection("open_ended");
                   return;
                 }
 
@@ -418,7 +441,7 @@ export default function SurveyPage() {
               }}
               className="flex-1 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition"
             >
-              {section === "body" ? "완료 →" : "다음 →"}
+              {section === "body" ? "다음 →" : "다음 →"}
             </button>
           </div>
         )}
