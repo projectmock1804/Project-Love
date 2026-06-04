@@ -5,10 +5,10 @@ function getApiKey(): string {
   if (!key) throw new Error("OPENROUTER_API_KEY 환경변수가 설정되지 않았습니다.");
   return key;
 }
-// CLAUDE.md 명세 준수: deepseek-chat-v3-0324:free 우선, 전부 무료 모델로 폴백
+// Llama 3 우선 (한국어 지시 준수 더 잘함), Qwen은 중국어 혼합 이슈 있어서 백업
 const MODELS = [
-  "qwen/qwen-2.5-7b-instruct",      // ✅ 매우 저렴 + 성능 우수
-  "meta-llama/llama-3-8b-instruct", // ✅ 저렴 (백업)
+  "meta-llama/llama-3-8b-instruct", // ✅ 한국어 지시 준수 우수
+  "qwen/qwen-2.5-7b-instruct",      // ✅ 백업 (중국어 혼합 주의)
 ];
 
 interface Message {
