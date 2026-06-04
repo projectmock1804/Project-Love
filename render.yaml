@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: project-love
+    env: node
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    branch: main
+    envVars:
+      - key: NODE_VERSION
+        value: 20
