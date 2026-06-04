@@ -99,10 +99,18 @@ export async function POST(req: NextRequest) {
 
     messages.push({ role: "user", content: parsed.data.message });
 
-    const aiReply = await chat(
-      [{ role: "system", content: SYSTEM_CHAT }, ...messages as Array<{ role: "system" | "user" | "assistant"; content: string }>],
-      { maxTokens: 300, temperature: 0.8 }
-    );
+    console.log("[chat POST] Calling OpenRouter... messages count:", messages.length);
+    let aiReply: string;
+    try {
+      aiReply = await chat(
+        [{ role: "system", content: SYSTEM_CHAT }, ...messages as Array<{ role: "system" | "user" | "assistant"; content: string }>],
+        { maxTokens: 300, temperature: 0.8 }
+      );
+      console.log("[chat POST] OpenRouter success, reply length:", aiReply.length);
+    } catch (chatError) {
+      console.error("[chat POST] OpenRouter call failed:", chatError instanceof Error ? chatError.message : chatError);
+      throw chatError;
+    }
 
     const currentUserCount = messages.filter((m: { role: string }) => m.role === "user").length;
     const isComplete =
