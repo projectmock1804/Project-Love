@@ -32,6 +32,8 @@ export default function PersonaPage() {
   const [appearanceWinner, setAppearanceWinner] = useState<{
     id?: string; name?: string; imageUrl?: string; faceShape?: string;
   } | null>(null);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
@@ -50,6 +52,8 @@ export default function PersonaPage() {
         if (data.appearanceWinner) {
           setAppearanceWinner(data.appearanceWinner);
         }
+        // AI 이미지 생성 비동기로 시작
+        if (token) generateAIImage(token);
       } else {
         setError("페르소나를 불러올 수 없습니다.");
       }
@@ -60,7 +64,25 @@ export default function PersonaPage() {
     }
   }
 
-async function confirmPersona() {
+  async function generateAIImage(token: string) {
+    try {
+      setGeneratingImage(true);
+      const res = await fetch("/api/appearance-image", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.imageUrl) setGeneratedImage(data.imageUrl);
+      }
+    } catch (e) {
+      console.error("AI 이미지 생성 실패:", e);
+    } finally {
+      setGeneratingImage(false);
+    }
+  }
+
+  async function confirmPersona() {
     setSaving(true);
     setError("");
     try {
@@ -149,24 +171,58 @@ async function confirmPersona() {
           <LogoutButton />
         </div>
 
-        {/* 당신의 이상형 — 월드컵 우승 연예인 */}
-        {appearanceWinner?.imageUrl && (
-          <div className="bg-white rounded-2xl overflow-hidden mb-6 shadow-lg border border-stone-100">
-            <div className="relative w-full aspect-[3/4]">
-              <Image
-                src={appearanceWinner.imageUrl}
-                alt={appearanceWinner.name ?? "이상형"}
-                fill
-                className="object-cover object-top"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <p className="text-white font-bold text-lg">{appearanceWinner.name}</p>
-                <p className="text-white/70 text-sm">당신이 선택한 이상형 외모</p>
+        {/* 이상형 이미지 섹션 */}
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-3">👁️ 당신의 이상형</p>
+          <div className="grid grid-cols-2 gap-3">
+            {/* 월드컵 우승 연예인 */}
+            {appearanceWinner?.imageUrl && (
+              <div className="bg-white rounded-xl overflow-hidden shadow border border-stone-100">
+                <div className="relative w-full aspect-[3/4]">
+                  <Image
+                    src={appearanceWinner.imageUrl}
+                    alt={appearanceWinner.name ?? "이상형"}
+                    fill
+                    className="object-cover object-top"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-2">
+                    <p className="text-white text-xs font-semibold">{appearanceWinner.name}</p>
+                    <p className="text-white/60 text-xs">선택한 외모</p>
+                  </div>
+                </div>
               </div>
+            )}
+
+            {/* AI 생성 이미지 */}
+            <div className="bg-white rounded-xl overflow-hidden shadow border border-stone-100">
+              {generatingImage ? (
+                <div className="aspect-[3/4] flex flex-col items-center justify-center bg-stone-50 animate-pulse gap-2">
+                  <div className="text-2xl">✨</div>
+                  <p className="text-xs text-stone-400 text-center px-2">AI가 이상형<br/>이미지 생성 중...</p>
+                </div>
+              ) : generatedImage ? (
+                <div className="relative w-full aspect-[3/4]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={generatedImage}
+                    alt="AI 생성 이상형"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-2">
+                    <p className="text-white text-xs font-semibold">AI 생성</p>
+                    <p className="text-white/60 text-xs">설문 기반 이미지</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="aspect-[3/4] flex flex-col items-center justify-center bg-stone-50 gap-2">
+                  <p className="text-xs text-stone-400 text-center px-2">이미지 생성<br/>실패</p>
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
 
         {persona.summary && (
           <div className="bg-stone-900 text-white rounded-2xl p-6 mb-4">

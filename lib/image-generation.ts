@@ -1,89 +1,63 @@
 /**
- * OpenRouter를 사용해 당신의 이상형 이미지를 생성합니다.
- * Flux Pro 또는 DALL-E-3 사용
+ * OpenRouter Gemini Flash Image를 사용해 이상형 이미지를 생성합니다.
+ * 모델: google/gemini-2.5-flash-image (무료, chat completions 방식)
+ * 응답: base64 PNG → data URI 반환
  */
 
 interface SurveyData {
-  appearance_winner?: {
-    name: string;
-    faceShape?: string;
-  };
+  appearance_winner?: { name?: string; faceShape?: string };
   body_features?: Record<string, number>;
 }
 
 function buildImagePrompt(survey: SurveyData): string {
-  const parts: string[] = [];
+  const parts: string[] = [
+    "Generate a realistic portrait photo of an attractive East Asian person.",
+  ];
 
-  // 1. 기본 설정
-  parts.push("Create a realistic, professional portrait photo of a beautiful person");
-
-  // 2. 얼굴형 (있으면)
-  if (survey.appearance_winner?.faceShape) {
-    const faceShapeMap: Record<string, string> = {
-      oval: "with an oval face shape",
-      round: "with a round face shape",
-      square: "with a square face shape",
-      heart: "with a heart-shaped face",
-      long: "with a long rectangular face shape",
-    };
-    const faceDesc = faceShapeMap[survey.appearance_winner.faceShape];
-    if (faceDesc) parts.push(faceDesc);
+  // 얼굴형
+  const faceShapeMap: Record<string, string> = {
+    oval:   "oval-shaped face",
+    round:  "round face",
+    square: "strong square jaw",
+    heart:  "heart-shaped face with defined cheekbones",
+    long:   "long oval face",
+  };
+  const faceShape = survey.appearance_winner?.faceShape;
+  if (faceShape && faceShapeMap[faceShape]) {
+    parts.push(faceShapeMap[faceShape]);
   }
 
-  // 3. 체형/신체 조건 (있으면)
-  if (survey.body_features) {
-    const weight = survey.body_features["weight"];
-    if (weight) {
-      if (weight <= 3) parts.push("very slim physique");
-      else if (weight <= 5) parts.push("slim and toned physique");
-      else if (weight <= 7) parts.push("average, healthy physique");
-      else parts.push("curvy, fuller physique");
-    }
-
-    const height = survey.body_features["height"];
-    if (height) {
-      if (height <= 160) parts.push("petite");
-      else if (height <= 170) parts.push("average height");
-      else parts.push("tall");
-    }
-
-    const skinTone = survey.body_features["skin_tone"];
-    if (skinTone) {
-      if (skinTone <= 3) parts.push("fair skin tone");
-      else if (skinTone <= 5) parts.push("medium skin tone");
-      else if (skinTone <= 7) parts.push("olive skin tone");
-      else parts.push("deep skin tone");
-    }
+  // 체형/키/피부
+  const bf = survey.body_features ?? {};
+  const weight = bf["weight"];
+  if (weight) {
+    if      (weight <= 3) parts.push("very slim figure");
+    else if (weight <= 6) parts.push("slim toned figure");
+    else                  parts.push("curvy full figure");
+  }
+  const skin = bf["skin_tone"];
+  if (skin) {
+    if      (skin <= 3) parts.push("fair porcelain skin");
+    else if (skin <= 6) parts.push("warm medium skin tone");
+    else                parts.push("rich deep skin tone");
   }
 
-  // 4. 헤어 (다양성)
-  parts.push("with stylish hair, professional makeup, natural lighting");
-
-  // 5. 마무리
-  parts.push(
-    "professional studio photography, high quality, hd resolution, portrait orientation"
-  );
-
-  return parts.join(", ") + ". The person looks friendly, confident, and approachable.";
+  parts.push("stylish modern outfit, soft natural studio lighting, photorealistic, 4K portrait");
+  return parts.join(", ") + ". Friendly confident expression, looking at camera.";
 }
 
-async function generateAppearanceImage(
-  survey: SurveyData
-): Promise<string | null> {
+async function generateAppearanceImage(survey: SurveyData): Promise<string | null> {
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      console.warn(
-        "[image-generation] OPENROUTER_API_KEY not set, skipping image generation"
-      );
+      console.warn("[image-gen] OPENROUTER_API_KEY not set");
       return null;
     }
 
     const prompt = buildImagePrompt(survey);
+    console.log("[image-gen] Calling Gemini Flash Image:", prompt.substring(0, 80));
 
-    console.log("[image-generation] Calling OpenRouter with prompt:", prompt.substring(0, 100));
-
-    const response = await fetch("https://openrouter.ai/api/v1/images/generations", {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -91,34 +65,34 @@ async function generateAppearanceImage(
         "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://project-love-di4s.onrender.com",
       },
       body: JSON.stringify({
-        model: "black-forest-labs/flux-pro",
-        prompt,
-        width: 1024,
-        height: 1024,
+        model: "google/gemini-2.5-flash-image",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 500,
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error(`[image-generation] OpenRouter error: ${response.status} ${error}`);
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(`[image-gen] OpenRouter error ${res.status}:`, err.substring(0, 200));
       return null;
     }
 
-    const data = await response.json();
-    const imageUrl = data.data?.[0]?.url;
+    const data = await res.json();
 
-    if (!imageUrl) {
-      console.warn("[image-generation] No image URL in response");
-      return null;
+    // 응답 구조: choices[0].message.images[0].image_url.url (base64 data URI)
+    const images = data.choices?.[0]?.message?.images;
+    if (images && images.length > 0) {
+      const url = images[0]?.image_url?.url;
+      if (url) {
+        console.log("[image-gen] ✅ Image generated (base64), length:", url.length);
+        return url; // "data:image/png;base64,..."
+      }
     }
 
-    console.log("[image-generation] Image generated successfully");
-    return imageUrl;
+    console.warn("[image-gen] No image in response:", JSON.stringify(data).substring(0, 200));
+    return null;
   } catch (err) {
-    console.error(
-      "[image-generation] Error:",
-      err instanceof Error ? err.message : err
-    );
+    console.error("[image-gen] Error:", err instanceof Error ? err.message : err);
     return null;
   }
 }
