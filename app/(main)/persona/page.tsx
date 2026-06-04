@@ -29,8 +29,9 @@ export default function PersonaPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [appearanceImage, setAppearanceImage] = useState<string | null>(null);
-  const [generatingImage, setGeneratingImage] = useState(true);
+  const [appearanceWinner, setAppearanceWinner] = useState<{
+    id?: string; name?: string; imageUrl?: string; faceShape?: string;
+  } | null>(null);
   const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
@@ -46,10 +47,8 @@ export default function PersonaPage() {
       if (res.ok) {
         const data = await res.json();
         setPersona(data.persona.summaryJson as PersonaData);
-
-        // 병렬로 이상형 이미지 생성 시작
-        if (token) {
-          generateAppearanceImage(token);
+        if (data.appearanceWinner) {
+          setAppearanceWinner(data.appearanceWinner);
         }
       } else {
         setError("페르소나를 불러올 수 없습니다.");
@@ -61,26 +60,7 @@ export default function PersonaPage() {
     }
   }
 
-  async function generateAppearanceImage(token: string) {
-    try {
-      setGeneratingImage(true);
-      const res = await fetch("/api/appearance-image", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setAppearanceImage(data.imageUrl);
-      }
-    } catch (err) {
-      console.error("이미지 생성 실패:", err);
-    } finally {
-      setGeneratingImage(false);
-    }
-  }
-
-  async function confirmPersona() {
+async function confirmPersona() {
     setSaving(true);
     setError("");
     try {
@@ -169,26 +149,22 @@ export default function PersonaPage() {
           <LogoutButton />
         </div>
 
-        {/* 당신의 이상형 이미지 */}
-        {appearanceImage && (
-          <div className="bg-white rounded-2xl overflow-hidden mb-6 shadow-lg">
-            <div className="relative w-full aspect-square">
+        {/* 당신의 이상형 — 월드컵 우승 연예인 */}
+        {appearanceWinner?.imageUrl && (
+          <div className="bg-white rounded-2xl overflow-hidden mb-6 shadow-lg border border-stone-100">
+            <div className="relative w-full aspect-[3/4]">
               <Image
-                src={appearanceImage}
-                alt="당신의 이상형"
+                src={appearanceWinner.imageUrl}
+                alt={appearanceWinner.name ?? "이상형"}
                 fill
-                className="object-cover"
+                className="object-cover object-top"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <p className="text-white font-bold text-lg">{appearanceWinner.name}</p>
+                <p className="text-white/70 text-sm">당신이 선택한 이상형 외모</p>
+              </div>
             </div>
-            <div className="p-4 text-center border-t border-stone-200">
-              <p className="text-sm text-stone-600 font-medium">👁️ 당신의 이상형</p>
-            </div>
-          </div>
-        )}
-
-        {generatingImage && (
-          <div className="bg-stone-100 rounded-2xl aspect-square flex items-center justify-center mb-6 animate-pulse">
-            <p className="text-stone-500">이상형 이미지 생성 중...</p>
           </div>
         )}
 

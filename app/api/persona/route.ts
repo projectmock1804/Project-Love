@@ -6,21 +6,32 @@ import { requireAuth } from "@/lib/auth";
 const PersonaPutSchema = z.object({
   confirmed: z.boolean().optional(),
   summaryJson: z.record(z.string(), z.unknown()).optional(),
+  userFeedback: z.string().max(500).optional(),
 });
 
 export async function GET(req: NextRequest) {
   try {
     const authUser = requireAuth(req);
 
-    const persona = await prisma.persona.findUnique({
-      where: { userId: authUser.userId },
-    });
+    const [persona, survey] = await Promise.all([
+      prisma.persona.findUnique({ where: { userId: authUser.userId } }),
+      prisma.survey.findUnique({ where: { userId: authUser.userId } }),
+    ]);
 
     if (!persona) {
       return NextResponse.json({ error: "페르소나가 아직 생성되지 않았습니다" }, { status: 404 });
     }
 
-    return NextResponse.json({ persona });
+    // 설문에서 이상형 winner 이미지 추출
+    const surveyResponses = survey?.responses as Record<string, unknown> | null;
+    const appearanceWinner = surveyResponses?.appearance_winner as {
+      id?: string;
+      name?: string;
+      imageUrl?: string;
+      faceShape?: string;
+    } | null;
+
+    return NextResponse.json({ persona, appearanceWinner: appearanceWinner ?? null });
   } catch (err: unknown) {
     if (err instanceof Error && err.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
@@ -63,7 +74,15 @@ export async function PUT(req: NextRequest) {
       // 수정된 summaryJson이 오면 _failed 플래그 제거 후 저장
       const cleaned = { ...parsed.data.summaryJson };
       delete cleaned._failed;
+      // 피드백이 있으면 summaryJson에 포함
+      if (parsed.data.userFeedback) {
+        cleaned.userFeedback = parsed.data.userFeedback;
+      }
       updateData.summaryJson = cleaned as object;
+    } else if (parsed.data.userFeedback) {
+      // summaryJson 수정 없이 피드백만 있는 경우 — 기존 데이터에 피드백 추가
+      const existing = currentPersona.summaryJson as Record<string, unknown>;
+      updateData.summaryJson = { ...existing, userFeedback: parsed.data.userFeedback } as object;
     }
 
     const persona = await prisma.persona.update({
