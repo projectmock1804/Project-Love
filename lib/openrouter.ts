@@ -1,8 +1,10 @@
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-if (!OPENROUTER_API_KEY) {
-  throw new Error("OPENROUTER_API_KEY 환경변수가 설정되지 않았습니다.");
-}
 const BASE_URL = "https://openrouter.ai/api/v1";
+
+function getApiKey(): string {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) throw new Error("OPENROUTER_API_KEY 환경변수가 설정되지 않았습니다.");
+  return key;
+}
 // CLAUDE.md 명세 준수: deepseek-chat-v3-0324:free 우선, 전부 무료 모델로 폴백
 const MODELS = [
   "deepseek/deepseek-chat-v3-0324:free",
@@ -29,9 +31,9 @@ async function fetchOnce(url: string, body: string, signal: AbortSignal): Promis
   const res = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      Authorization: `Bearer ${getApiKey()}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://project-love-di4s.onrender.com",
     },
     body,
     signal,
