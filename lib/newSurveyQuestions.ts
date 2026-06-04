@@ -37,6 +37,14 @@ export interface LifestyleCard {
   value: string;
 }
 
+// 오픈엔드 주관식 질문
+export interface OpenEndedQuestion {
+  id: string;
+  question: string;
+  placeholder: string;
+  maxLength: number;
+}
+
 // ===== 이상형 월드컵 데이터 (16강 = 16명) =====
 export const APPEARANCE_CELEBRITIES_FEMALE: Celebrity[] = [
   { id: "face_f_1",  name: "아일릿 원희",     imageUrl: `/images/celebrities/female_1.jpg`,  description: "아일릿 원희",       faceShape: "oval"   },
@@ -176,3 +184,37 @@ export function getBodyFeatures(userGender: string): BodyFeatureQuestion[] {
 
 // 하위호환 — 기존 코드가 BODY_FEATURES를 직접 import하는 경우를 위한 alias
 export const BODY_FEATURES = BODY_FEATURES_FEMALE_IDEAL;
+
+// ===== 오픈엔드 주관식 질문 (AI 채팅 5번으로 축소되면서 추가) =====
+export const OPEN_ENDED_QUESTIONS: OpenEndedQuestion[] = [
+  {
+    id: "ideal_partner_desc",
+    question: "당신의 이상형을 간단히 설명해주세요",
+    placeholder: "예: 따뜻하고 책을 좋아하는 사람, 웃음이 많은 사람 등",
+    maxLength: 300,
+  },
+  {
+    id: "past_relationship_lesson",
+    question: "지난 연애에서 가장 큰 교훈은 무엇이었나요?",
+    placeholder: "예: 솔직한 커뮤니케이션의 중요성, 혼자만의 시간이 필요함 등",
+    maxLength: 300,
+  },
+  {
+    id: "five_year_vision",
+    question: "5년 뒤 자신을 어떤 모습으로 그리고 있나요?",
+    placeholder: "예: 안정적인 직장에서 일하며 의미 있는 만남을 찾고 싶어요",
+    maxLength: 300,
+  },
+  {
+    id: "what_makes_happy",
+    question: "당신을 가장 행복하게 만드는 것은 무엇인가요?",
+    placeholder: "예: 사랑하는 사람과의 시간, 새로운 경험, 성취감 등",
+    maxLength: 300,
+  },
+  {
+    id: "dealbreaker",
+    question: "연애에서 절대로 양보할 수 없는 부분은?",
+    placeholder: "예: 정직함, 가족 존중, 금전 관념 등",
+    maxLength: 300,
+  },
+];
