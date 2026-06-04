@@ -7,8 +7,8 @@ function getApiKey(): string {
 }
 // CLAUDE.md 명세 준수: deepseek-chat-v3-0324:free 우선, 전부 무료 모델로 폴백
 const MODELS = [
-  "deepseek/deepseek-chat-v3",      // ✅ 작동함
-  "anthropic/claude-3-5-haiku",     // ✅ 작동함 (Haiku는 저렴)
+  "qwen/qwen-2.5-7b-instruct",      // ✅ 매우 저렴 + 성능 우수
+  "meta-llama/llama-3-8b-instruct", // ✅ 저렴 (백업)
 ];
 
 interface Message {
