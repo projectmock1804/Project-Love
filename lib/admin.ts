@@ -7,17 +7,11 @@ function getAdminJwtSecret(): string {
   return secret;
 }
 
-/** 어드민 비밀번호 동적 생성 (패턴 + MMDD, KST 기준) */
+/** 어드민 비밀번호 (고정값) */
 function getAdminPassword(): string {
-  const pattern = process.env.ADMIN_PASSWORD_PATTERN;
-  if (!pattern) throw new Error("ADMIN_PASSWORD_PATTERN 환경변수가 설정되지 않았습니다.");
-
-  // KST(UTC+9) 기준으로 날짜 계산
-  const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const date = String(now.getUTCDate()).padStart(2, "0");
-
-  return pattern + month + date;
+  const password = process.env.ADMIN_PASSWORD_FIXED;
+  if (!password) throw new Error("ADMIN_PASSWORD_FIXED 환경변수가 설정되지 않았습니다.");
+  return password;
 }
 
 /** 어드민 비밀번호 검증 — constant-time 비교로 타이밍 공격 방지 */
