@@ -22,15 +22,23 @@ export async function POST(req: NextRequest) {
     // 설문 응답 파싱
     const responses = survey.responses as Record<string, unknown>;
 
-    // DALL-E로 이미지 생성
-    const imageUrl = await generateAppearanceImage(responses as {
-      appearance_winner?: { name: string; faceShape?: string };
-      body_features?: Record<string, number>;
-    });
+    // Gemini Flash Image로 이미지 생성
+    let imageUrl: string | null = null;
+    let genError = "unknown";
+    try {
+      imageUrl = await generateAppearanceImage(responses as {
+        appearance_winner?: { name: string; faceShape?: string };
+        body_features?: Record<string, number>;
+      });
+    } catch (e) {
+      genError = e instanceof Error ? e.message : String(e);
+      console.error("[appearance-image] generateAppearanceImage threw:", genError);
+    }
 
     if (!imageUrl) {
+      console.error("[appearance-image] imageUrl is null, genError:", genError);
       return NextResponse.json(
-        { error: "이미지 생성에 실패했습니다. 나중에 다시 시도해주세요." },
+        { error: "이미지 생성에 실패했습니다.", detail: genError },
         { status: 500 }
       );
     }
