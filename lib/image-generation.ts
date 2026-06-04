@@ -1,5 +1,6 @@
 /**
- * DALL-E를 사용해 당신의 이상형 이미지를 생성합니다.
+ * OpenRouter를 사용해 당신의 이상형 이미지를 생성합니다.
+ * Flux Pro 또는 DALL-E-3 사용
  */
 
 interface SurveyData {
@@ -10,7 +11,7 @@ interface SurveyData {
   body_features?: Record<string, number>;
 }
 
-function buildDallEPrompt(survey: SurveyData): string {
+function buildImagePrompt(survey: SurveyData): string {
   const parts: string[] = [];
 
   // 1. 기본 설정
@@ -60,7 +61,7 @@ function buildDallEPrompt(survey: SurveyData): string {
 
   // 5. 마무리
   parts.push(
-    "professional studio photography, high quality, 8k resolution, portrait orientation"
+    "professional studio photography, high quality, hd resolution, portrait orientation"
   );
 
   return parts.join(", ") + ". The person looks friendly, confident, and approachable.";
@@ -70,37 +71,36 @@ async function generateAppearanceImage(
   survey: SurveyData
 ): Promise<string | null> {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey || apiKey.includes("YOUR_")) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
       console.warn(
-        "[image-generation] OPENAI_API_KEY not set, skipping image generation"
+        "[image-generation] OPENROUTER_API_KEY not set, skipping image generation"
       );
       return null;
     }
 
-    const prompt = buildDallEPrompt(survey);
+    const prompt = buildImagePrompt(survey);
 
-    console.log("[image-generation] Calling DALL-E with prompt:", prompt.substring(0, 100));
+    console.log("[image-generation] Calling OpenRouter with prompt:", prompt.substring(0, 100));
 
-    const response = await fetch("https://api.openai.com/v1/images/generations", {
+    const response = await fetch("https://openrouter.ai/api/v1/images/generations", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://project-love-di4s.onrender.com",
       },
       body: JSON.stringify({
-        model: "dall-e-3",
+        model: "black-forest-labs/flux-pro",
         prompt,
-        n: 1,
-        size: "1024x1024",
-        quality: "standard",
-        style: "natural",
+        width: 1024,
+        height: 1024,
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error(`[image-generation] DALL-E error: ${response.status} ${error}`);
+      console.error(`[image-generation] OpenRouter error: ${response.status} ${error}`);
       return null;
     }
 
@@ -123,4 +123,4 @@ async function generateAppearanceImage(
   }
 }
 
-export { generateAppearanceImage, buildDallEPrompt };
+export { generateAppearanceImage, buildImagePrompt };
