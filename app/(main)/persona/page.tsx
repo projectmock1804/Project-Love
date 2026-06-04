@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import LogoutButton from "@/components/LogoutButton";
+import Image from "next/image";
 
 interface PersonaData {
   conflict_style?: string;
@@ -28,6 +29,9 @@ export default function PersonaPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [appearanceImage, setAppearanceImage] = useState<string | null>(null);
+  const [generatingImage, setGeneratingImage] = useState(true);
+  const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
     loadPersona();
@@ -42,6 +46,11 @@ export default function PersonaPage() {
       if (res.ok) {
         const data = await res.json();
         setPersona(data.persona.summaryJson as PersonaData);
+
+        // 병렬로 이상형 이미지 생성 시작
+        if (token) {
+          generateAppearanceImage(token);
+        }
       } else {
         setError("페르소나를 불러올 수 없습니다.");
       }
@@ -49,6 +58,25 @@ export default function PersonaPage() {
       setError("페르소나를 불러오는 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function generateAppearanceImage(token: string) {
+    try {
+      setGeneratingImage(true);
+      const res = await fetch("/api/appearance-image", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setAppearanceImage(data.imageUrl);
+      }
+    } catch (err) {
+      console.error("이미지 생성 실패:", err);
+    } finally {
+      setGeneratingImage(false);
     }
   }
 
@@ -63,7 +91,10 @@ export default function PersonaPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ summaryJson: persona }),
+        body: JSON.stringify({
+          summaryJson: persona,
+          userFeedback: feedback || undefined, // 피드백 포함
+        }),
       });
       if (res.ok) {
         router.push("/matches");
@@ -138,6 +169,29 @@ export default function PersonaPage() {
           <LogoutButton />
         </div>
 
+        {/* 당신의 이상형 이미지 */}
+        {appearanceImage && (
+          <div className="bg-white rounded-2xl overflow-hidden mb-6 shadow-lg">
+            <div className="relative w-full aspect-square">
+              <Image
+                src={appearanceImage}
+                alt="당신의 이상형"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="p-4 text-center border-t border-stone-200">
+              <p className="text-sm text-stone-600 font-medium">👁️ 당신의 이상형</p>
+            </div>
+          </div>
+        )}
+
+        {generatingImage && (
+          <div className="bg-stone-100 rounded-2xl aspect-square flex items-center justify-center mb-6 animate-pulse">
+            <p className="text-stone-500">이상형 이미지 생성 중...</p>
+          </div>
+        )}
+
         {persona.summary && (
           <div className="bg-stone-900 text-white rounded-2xl p-6 mb-4">
             <p className="text-sm leading-relaxed">{persona.summary}</p>
@@ -209,8 +263,27 @@ export default function PersonaPage() {
 
         {error && <p className="text-red-500 text-sm text-center mt-4">{error}</p>}
 
-        <div className="mt-6 space-y-3">
-          <p className="text-center text-sm text-stone-500">이 페르소나가 당신을 잘 표현하나요?</p>
+        <div className="mt-6 space-y-4">
+          <div>
+            <p className="text-sm font-medium text-stone-700 mb-2">
+              💬 코멘트 추가 (선택)
+            </p>
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="페르소나에 대한 의견을 자유롭게 작성해주세요. 예: '더 추가하고 싶은 부분이 있나요?', '이 부분은 틀렸어요' 등"
+              className="w-full p-3 border border-stone-300 rounded-lg text-sm focus:outline-none focus:border-stone-500 resize-none"
+              rows={3}
+              maxLength={500}
+            />
+            <p className="text-xs text-stone-400 mt-1">
+              {feedback.length}/500
+            </p>
+          </div>
+
+          <p className="text-center text-sm text-stone-500">
+            이 페르소나가 당신을 잘 표현하나요?
+          </p>
           <button
             onClick={confirmPersona}
             disabled={saving}
