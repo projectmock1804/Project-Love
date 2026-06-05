@@ -75,13 +75,10 @@ export async function POST(req: NextRequest) {
       );
     });
 
-    // 같은 지역 우선 정렬 후 남은 슬롯만큼만
-    eligible.sort((a, b) => {
-      const aSame = a.region === me.region ? 0 : 1;
-      const bSame = b.region === me.region ? 0 : 1;
-      return aSame - bSame;
-    });
-    const targets = eligible.slice(0, remaining);
+    // 테스트 모드: 지역 필터 제거, 순수 나이 필터만 적용 후 무작위 선택
+    const targets = eligible
+      .sort(() => Math.random() - 0.5) // 무작위 정렬
+      .slice(0, remaining);
 
     if (targets.length === 0) {
       return NextResponse.json({
